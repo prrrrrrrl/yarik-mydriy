@@ -11,15 +11,15 @@
 html,body{height:100%;margin:0}
 body{background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
 #vp{position:absolute;inset:0;touch-action:none;cursor:grab;background-image:radial-gradient(var(--dot) 1.5px,transparent 1.5px);background-size:24px 24px}
-#st{position:absolute;left:0;top:0;width:2400px;height:1800px;transform-origin:0 0}
+#st{position:absolute;left:0;top:0;width:2400px;height:2500px;transform-origin:0 0}
 svg{position:absolute;left:0;top:0;pointer-events:none}
 .n{position:absolute;background:var(--node);border:3px solid var(--bd);border-radius:26px;color:var(--ink);padding:12px 16px;font-size:15px;line-height:1.3;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
 .n.c{font-weight:700;font-size:18px;padding:16px 20px}
 .n.k{font-weight:700;font-size:17px;border-radius:30px}
-.im{width:100%;min-height:70px;border:2px dashed rgba(26,26,46,.45);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:11px;font-weight:400;cursor:pointer;overflow:hidden;padding:4px}
-.im.big{min-height:130px}
+.im{width:100%;height:110px;flex-shrink:0;border:2px dashed rgba(26,26,46,.45);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:11px;font-weight:400;cursor:pointer;overflow:hidden;padding:4px}
+.im.big{height:150px}
 .im span{font-size:26px}
-.im img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;display:block}
+.im img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
 #ui{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;z-index:5}
 #ui button{width:42px;height:42px;border:0;border-radius:12px;background:var(--ui);color:var(--uink);font-size:20px;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 #ui small{background:var(--ui);color:var(--uink);padding:6px 10px;border-radius:10px;font-size:12px;box-shadow:0 1px 6px rgba(0,0,0,.25)}
@@ -28,10 +28,10 @@ svg{position:absolute;left:0;top:0;pointer-events:none}
 </head>
 <body>
 <div id="tt">Интеллект-карта</div>
-<div id="vp"><div id="st"><svg id="sv" width="2400" height="1800"></svg></div></div>
+<div id="vp"><div id="st"><svg id="sv" width="2400" height="2500"></svg></div></div>
 <div id="ui"><button id="zo">−</button><small id="zl">100%</small><button id="zi">+</button><button id="fit" title="Показать всё">⤢</button><small>Нажмите на пунктирную рамку, чтобы добавить картинку</small></div>
 <script>
-var CX=1200,CY=650,st=document.getElementById('st'),sv=document.getElementById('sv');
+var CX=1200,CY=900,st=document.getElementById('st'),sv=document.getElementById('sv');
 var NS='http://www.w3.org/2000/svg';
 function mk(o){
   var d=document.createElement('div');d.className='n'+(o.cls?' '+o.cls:'');
@@ -74,22 +74,22 @@ var L=[{t:'Внешняя политика',ic:'🌍',kids:[
  {t:'🌲 Соседи',kids:[
   {t:'1245 г. — победы над литовцами под Торопцом и Усвятом'},
   {t:'1251 г. — договор с Норвегией; 1256 г. — поход в Финляндию'}]}]}];
-var STEP=150;
 function side(tree,dir){
-  var leaves=0,tot=0;
-  (function cnt(n){if(!n.kids)tot++;else n.kids.forEach(cnt);})(tree[0]);
-  var y0=CY-(tot-1)*STEP/2,i=0;
+  var cur=0,els=[];
   function place(n,d){
-    var cls=d==0?'k':(d==1?'k':''),w=[170,190,270][d];
-    var el=mk({t:n.t,w:w,img:n.img,ic:n.ic,cap:n.cap,src:n.src,cls:d<2?'k':''});
+    var w=[170,190,270][d];
+    var el=mk({t:n.t,w:w,img:n.img,ic:n.ic,cap:n.cap,src:n.src,cls:d<2?'k':''});els.push(el);
     var ys=[];
     if(n.kids){n.kids.forEach(function(k){ys.push(place(k,d+1));});}
-    var y=n.kids?(ys[0]._y+ys[ys.length-1]._y)/2:(y0+(i++)*STEP);
-    if(d==0)y=CY;
+    var y;
+    if(n.kids){y=(ys[0]._y+ys[ys.length-1]._y)/2;}
+    else{var h=el.offsetHeight;y=cur+h/2;cur+=h+30;}
     atC(el,CX+dir*[300,600,950][d],y);
-    el._kids=ys;n._el=el;return el;
+    el._kids=ys;return el;
   }
   var root=place(tree[0],0);
+  var dy=CY-root._y;
+  els.forEach(function(e){atC(e,e._x,e._y+dy);});
   (function link(e){e._kids.forEach(function(k){elbow(e,k);link(k);});})(root);
   return root;
 }
@@ -128,7 +128,7 @@ stack(ch,[
 var vp=document.getElementById('vp'),s=1,tx=0,ty=0;
 function ap(){st.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')';document.getElementById('zl').textContent=Math.round(s*100)+'%';}
 function zoom(f,cx,cy){var ns=Math.min(2,Math.max(.2,s*f));tx=cx-(cx-tx)*ns/s;ty=cy-(cy-ty)*ns/s;s=ns;ap();}
-function fit(){s=Math.min(innerWidth/2300,innerHeight/1750);tx=(innerWidth-2400*s)/2;ty=(innerHeight-1800*s)/2;if(s<.2)s=.2;ap();}
+function fit(){s=Math.min(innerWidth/2300,innerHeight/2450);tx=(innerWidth-2400*s)/2;ty=(innerHeight-2500*s)/2;if(s<.2)s=.2;ap();}
 var drag=null;
 vp.addEventListener('pointerdown',function(e){if(e.target.closest('.im'))return;drag={x:e.clientX-tx,y:e.clientY-ty};vp.setPointerCapture(e.pointerId);vp.style.cursor='grabbing';});
 vp.addEventListener('pointermove',function(e){if(!drag)return;tx=e.clientX-drag.x;ty=e.clientY-drag.y;ap();});
